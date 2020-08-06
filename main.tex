@@ -1,8 +1,11 @@
-\documentclass{article}
+\documentclass[a4paper, 12pt]{article}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,bbm,bm}
+\usepackage[parfill]{parskip}
 
 \title{trend-calculus}
-\author{?,?,?}
+\author{Johannes Graner \and Raazesh Sainudiin \and whomsoeverCoauthor(s)}
+
 \date{August 2020}
 
 \begin{document}
@@ -10,5 +13,100 @@
 \maketitle
 
 \section{Introduction}
+
+What does trend mean in time series... what are trend reversals and why do we want to detect trend-reversals? % keep it brief and point to wikipedia or other publicly available resources using \footnote{\url{...}}
+
+
+\section{Data}
+
+What is a typical dataset here and what specific ones are we using -- yfinance, fx1M, etc. Also point o github lamastex forks of these 
+
+\section{Algoritm}
+
+GitHub link to spark-trend-calculus... and Andrew's Lua version...
+
+\section{Mathematical interpretation}
+
+\subsection{Algorithm}
+
+The input to the algorithm is a time series with $N$ observations, 
+
+\[ T = \{ p_i = (t_i, x_i) \in \mathbb{R}^2 : t_i < t_{i+1} \forall i = 1, \dots, N-1 \} \]
+
+and a window size $s \in [2, N] \cap \mathbb{Z}$.
+
+To create the windows in the algorithm, we define the function $f_s : T^s \to T^2$,
+
+\begin{align*}
+    f_s(p_{i_1}, \dots, p_{i_s}) = ( & \min_t (\min_x \{ (t_{i_j}, x_{i_j}) : j = 1,\dots,s \}), \\
+    & \max_t (\max_x \{ (t_{i_j}, x_{i_j}) : j = 1,\dots,s \}) )
+\end{align*}
+
+which finds the earliest minimum and latest maximum among the points $p_{i_1},\dots,p_{i_s}$.
+
+Assume that $N$ is divisible by $s$ (otherwise, only consider $N - \lceil\frac{N}{s} \rceil$ points of the series). Let $n = \frac{N}{s} \in \mathbb{Z}_{\ge 2}$ and let 
+
+\begin{equation*}
+    W = \{ w_k = (l_k, h_k) = f_s(p_{1+sk},\dots,p_{s+sk}) : k = 1,\dots,n\}. 
+\end{equation*}
+
+Then $W$ is the set of windows that summarize the time series $T$. For each $w_k \in W$, define the trend for that window as 
+
+\begin{equation*}
+    \tau_k = \begin{cases}
+        1, & k = 1 \\
+        \tau(w_{k-1}, w_k), & k > 1
+    \end{cases}
+\end{equation*}
+
+where $\tau : W^2 \to \{-1,0,1\}$ is given by
+
+\begin{equation*}
+    \tau(w_{k-1}, w_k) = sign(sign \circ \pi_x(l_k - l_{k-1}) + sign \circ \pi_x(h_k - h_{k-1}))
+\end{equation*}
+
+$\pi_x : \mathbb{R}^2 \to \mathbb{R}$ is the projection $(t,x) \mapsto x$.
+
+To correct the trend when $\tau_k = 0$, let 
+
+\begin{equation*}
+    w_k^* = \begin{cases}
+        w_{k - \#\{j : j<k, t_j = 0\}}, & \tau_k \ne 0 \\
+        (\min_x\{a,b\}, \max_x\{a,b\}), & \tau_k = 0
+    \end{cases}
+\end{equation*}
+
+where $a = \max_t\{l_{k-1}, h_{k-1}\}, b = \min_t\{l_k, h_k\}$. This creates intermediate windows at every point where the trend is 0 and inserts them at the correct places in the sequence $(w_k^*)$. The length of this sequence is $n^* = n + \#\{k : \tau_k = 0\}$. This sequence is then used to define the corrected trends $\tau_k^*$.
+
+\begin{equation*}
+    \tau_k^* = \begin{cases}
+        1, & k = 1 \\
+        \tau(w_{k-1}^*, w_k^*), & k>1 \; and \;  \tau(w_{k-1}^*, w_k^*) \ne 0 \\
+        \tau_{k-1}^*, & otherwise
+    \end{cases}
+\end{equation*}
+
+This ensures that every trend is non-zero. If a zero trend is found with the corrected windows as well, the last non-zero trend is carried forward. The non-zero trends are used to define reversal of trends $r_k$ as $r_1 = 1$, $r_k = sign(\tau_{k-1}^* - \tau_k^*)$ and let
+
+\begin{equation*}
+    T^*(k) = \begin{cases}
+        \{ \min_t\{l_1, h_1\} \}, & k = 1 \\
+        \{ l_{k-1} \}, & r_k = 1 \; and \; k > 1 \\
+        \{ h_{k-1} \}, & r_k = -1 \; and \; k > 1 \\
+        \varnothing, & r_k = 0 \; and \; k > 1
+    \end{cases}
+\end{equation*}
+
+This can be used to define a new time series $T^{(1)} = \cup_{k=1}^{n^*} T^*(k) \subset T$ which contain only the points of T where a trend reversal happens.
+
+\subsection{Multiple iterations}
+
+The output of the algorithm, $T^{(1)}$, can then be used for another iteration to get $T^{(2)} \subset T^{(1)}$. This can be repeated until $\#T^{(m)} < s$, at which point we get $T^{(m^*)} = \varnothing \; \forall m^* > m$ and a decreasing sequence of sets $\mathcal{T}$ can be defined as $\mathcal{T} = (T, T^{(1)}, \dots, T^{(m)})$ where $T \supset T^{(1)} \supset, \dots, T^{(m)}$.
+
+
+
+\section{State of Structured Streams}
+
+The real problem...
 
 \end{document}
