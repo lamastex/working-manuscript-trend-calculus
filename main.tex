@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath,amsthm,amssymb,amsfonts,bbm,bm}
 \usepackage[parfill]{parskip}
+\usepackage{hyperref}
 
 \title{trend-calculus}
 \author{Johannes Graner \and Raazesh Sainudiin \and whomsoeverCoauthor(s)}
@@ -14,14 +15,31 @@
 
 \section{Introduction}
 
-What does trend mean in time series... what are trend reversals and why do we want to detect trend-reversals? % keep it brief and point to wikipedia or other publicly available resources using \footnote{\url{...}}
+A trend in a financial time series can be thought of as "a perceived tendency of financial markets to move in a particular direction over time".\footnote{\url{https://en.wikipedia.org/wiki/Market_trend}}
+In other words, if the trend is up, the price or value tends to increase and if the trend is down, the price or value tends to decrease. 
+
+However, most time series fluctuate quite rapidly so some smoothing has to happen to detect what is a trend and what is just random noise.
+
+%What does trend mean in time series... what are trend reversals and why do we want to detect trend-reversals? % keep it brief and point to wikipedia or other publicly available resources using \footnote{\url{...}}
 
 
 \section{Data}
 
-What is a typical dataset here and what specific ones are we using -- yfinance, fx1M, etc. Also point o github lamastex forks of these 
+A typical dataset for this type of application is financial data, either historical data or some stream of trades happening right now. Such a time series typically contains at least three things: 
 
-\section{Algoritm}
+\begin{itemize}
+    \item A ticker, some label for what is being traded.
+    \item A timestamp that tells us when the data is from. This can be the timestamps for individual trades or a timestamp for when some aggregation has finished. An example of such an aggregation is the average over the last minute.
+    \item A value, usually the closing price or average closing price for aggregated data.
+\end{itemize}
+
+Such data is available from e.g. \url{http://www.histdata.com/}.\footnote{\url{https://github.com/lamastex/FX-1-Minute-Data}}
+
+%What is a typical dataset here and what specific ones are we using -- yfinance, fx1M, etc. Also point o github lamastex forks of these 
+
+\section{Algorithm}
+
+Trend Calculus\footnote{\url{https://github.com/ByteSumoLtd/TrendCalculus-lua/tree/master/benchmark}} is invented by Andrew Morgan and is implemented is Apache Spark and made compatible with Spark Structured Streaming\footnote{\url{https://github.com/lamastex/spark-trend-calculus}} by Johannes Graner under supervision of Raazesh Sainudiin.
 
 GitHub link to spark-trend-calculus... and Andrew's Lua version...
 
@@ -97,16 +115,30 @@ This ensures that every trend is non-zero. If a zero trend is found with the cor
     \end{cases}
 \end{equation*}
 
-This can be used to define a new time series $T^{(1)} = \cup_{k=1}^{n^*} T^*(k) \subset T$ which contain only the points of T where a trend reversal happens.
+If $T^*(k) \ne \varnothing$, then $T^*(k)$ is a singleton and we call the element in $T^*(k)$ a \textit{reversal point}.
+
+This can be used to define a new time series $T^{(1)} = \cup_{k=1}^{n^*} T^*(k) \subset T$ which contain only the points of T where a trend reversal happens. The reversal points can be used to determine the \textit{trend} at every point since the reversal points are the points at which the trend changes. The trend at a point $p_i$ is $trend_i = (-1)^{\#\{p_j \in T^{(1)} : t_j \le t_i\} + 1}$, i.e. the trend at $p_1$ is 1 and switches sign at the reversal points.
 
 \subsection{Multiple iterations}
 
-The output of the algorithm, $T^{(1)}$, can then be used for another iteration to get $T^{(2)} \subset T^{(1)}$. This can be repeated until $\#T^{(m)} < s$, at which point we get $T^{(m^*)} = \varnothing \; \forall m^* > m$ and a decreasing sequence of sets $\mathcal{T}$ can be defined as $\mathcal{T} = (T, T^{(1)}, \dots, T^{(m)})$ where $T \supset T^{(1)} \supset, \dots, T^{(m)}$.
+The output of the algorithm, $T^{(1)}$, can then be used for another iteration to get $T^{(2)} \subset T^{(1)}$. This can be repeated until $\#T^{(m)} < s$, at which point we get $T^{(m^*)} = \varnothing \; \forall m^* > m$ and a decreasing sequence of sets $\mathcal{T}$ can be defined as $\mathcal{T} = (T, T^{(1)}, \dots, T^{(m)})$ where $T \supset T^{(1)} \supset, \dots, T^{(m)}$. We therefore define the \textit{order} of a reversal point $p$ to be $\rho^*(p) = max (\{ k : p \in T^{(k)} \}$. A point $p$ that is not a reversal point, i.e. $p \in T \backslash T^{(1)}$, then it has reversal order 0, $\rho^*(p) = 0$.
+
+Since $\mathcal{T}$ is a decreasing sequence of sets, one can augment the original time series $T$ with information about every reversal that has occurred thus far. Each point in the augmented time series $T_{tc}$ is $(t_i,x_i,\rho_i) \in \mathbb{R}^2 \times \{ -m,\dots,m \}$ where $\rho_i = trend_i \cdot \rho^*(p_i)$.
+
+So, if a point is a reversal of order $r$, then it will be augmented with $r$ if it is a local minimum and $-r$ if it is a local maximum. If a point is not a reversal, it will be augmented with $0$.
+
+We then see that $T^{(k)} = \{ p : \rho^*(p) \ge k \} $ so $T_{tc}$ contains all information necessary to recreate $\mathcal{T}$ as well as information about the type of reversal. It therefore also contains all information necessary to determine the trend at every point of $T$.
+
+\section{Modeling}
 
 
 
 \section{State of Structured Streams}
 
 The real problem...
+
+\section{Showcases}
+
+A github.io page with showcases for Trend Calculus is available at \url{https://lamastex.github.io/spark-trend-calculus-examples/}.
 
 \end{document}
