@@ -23,10 +23,10 @@ This work (at the algorithmic implementation and constructive mathematical level
 This work was partly supported by Combient Mix AB through 
 
 - 2020 summer internship (Johannes Graner)
-- 2021 data science project fellowships (Rafailia Stavroula and Virginia Jimenez
-)
+- 2021 data science project fellowships (Rafailia Stavroula and Virginia Jimenez)
 
 at:
 
 Combient Competence Centre for Data Engineering Sciences, Department of Mathematics, Uppsala University, Uppsala, Sweden and COmbient Mix AB, Stockholm.
 
+The working manuscript is in progress with the support of Johannes Graner, Rafailia Stavroula, Virginia Jimenez, Albin Toft, Antoine Amend, Andrew Morgan, Liam Solus and Raazesh Sainudiin.
