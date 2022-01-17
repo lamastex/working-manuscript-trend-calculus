@@ -37,8 +37,6 @@
 
 
 %%%%%%%%%%  LOCAL VARIABLES HERE
-
-
 \newcommand{\thesistitle}{Bivariate Trend Calculus and Causal Inference on Financial Streams}
 \newcommand{\LIF}{}
 \newcommand{\sdml}{ScaDaMaLe}
@@ -101,7 +99,7 @@
 
 \newpage
 \begin{abstract}
-    Analysing time series and identifying trends can become quite computationally heavy, especially in cases that include big data that needs to be processed on real time. This paper presents a computationally efficient solution for long term trend finding on bi-variate financial time series, by integrating the TrendCalculus library within the Apache Spark ecosystem. An extension is also implemented as an attempt to find causal inference among the established trend change points. The latter is achieved by utilizing the Pathogen algorithm. 
+    Analysing time series and identifying trends can become quite computationally heavy, especially in cases that include big data that needs to be processed on real time. This paper presents a computationally efficient solution for long term trend finding on bi-variate financial time series, by integrating the TrendCalculus library within the Apache Spark ecosystem. An extension is also implemented as an attempt to find causal inference among the established trend change points. The latter is achieved by utilising the Pathogen algorithm. 
     
 \end{abstract}
 \begin{center}
@@ -120,10 +118,10 @@ This project amounts to identifying long term trends on time series from histori
 
 
 \section{Approach}
-For the analysis the following tools and frameworks were utilized:
+For the analysis the following tools and frameworks were utilised:
     \begin{enumerate}
         \item Historical data of financial time series \cite{HistData}.
-        \item The Apache Spark ecosystem to handle the big volume of the data. 
+        \item The Apache Spark ecosystem \cite{Spark} to handle the big volume of the data. 
         \item The TrendCalculus algorithm \cite{TrendCalculus}, which provided an efficient solution on identifying long term trends by establishing high order trend change points.
         \item The Pathogen algorithm \cite{Pathogen} to establish causal inference between events of two time series. 
     \end{enumerate}
@@ -144,13 +142,13 @@ Figure \ref{fig:pipeline} presents the main steps of the overall application.
   %\textsf{\textbf{Causal inference:}} The returned time series was encoded to be suitable as input to Pathogen by turning consecutive  $n$-th order reversals to events.\\
  
 \subsection{The data}
-In this work we utilized historical data from the foreign exchange market \cite{Forex} for the trading of currencies. The data sets consist of $66$ pairs of currencies and futures/commodities with values recorded every one minute over the last two decades. The obtained data were fetched from \cite{HistData}, structured as comma separated values (.CSV format). Each financial time series is associated with a ticker which is used in order to download all the files associated with the desired trading pair. This ticker is then used to combine all of the available data files into a single one using methods from \cite{FX1}. The latter is then written as parquet files on Databricks file system (dbfs). This way each financial time series is uniquely identified given the ticker name associated with it and all of the relevant records can be loaded at once. 
+In this work we utilised historical data from the foreign exchange market \cite{Forex} for the trading of currencies. The data sets consist of $66$ pairs of currencies and futures/commodities with values recorded every one minute over the last two decades. The obtained data were fetched from \cite{HistData}, structured as comma separated values (.CSV format). Each financial time series is associated with a ticker which is used in order to download all the files associated with the desired trading pair. This ticker is then used to combine all of the available data files into a single one using methods from \cite{FX1}. The latter is then written as parquet files on Databricks file system (dbfs). This way each financial time series is uniquely identified given the ticker name associated with it and all of the relevant records can be loaded at once. 
 
 \subsection{Cloud Computing}
-A cluster was utilized in order to distribute the computational tasks and scale on demand within the Apache Spark framework. To handle the big volume of the data that are to be processed and execute the computations within a reasonable time frame, the Apache Spark ecosystem and it's tools are put into action. Specifically, a Spark cluster was deployed so that the application can be scalable not only in terms of I/O but also in computing power when necessary. This way, the distribution of computational tasks is enabled and the application can scale on demand.  In addition, after the most computationally intensive levels of the pipeline the processed data are written as parquet files on the Databricks file system (dbfs). At the same time, throughout the process several checkpoints are kept to avoid exploding computations of complex queries.
+A cluster was deployed in order to distribute the computational tasks and scale on demand within the Apache Spark framework. To handle the big volume of the data that are to be processed and execute the computations within a reasonable time frame, the Apache Spark ecosystem and it's tools are put into action. Specifically, a Spark cluster was deployed so that the application can be scalable not only in terms of I/O but also in computing power when necessary. This way, the distribution of computational tasks is enabled and the application can scale on demand.  In addition, after the most computationally intensive levels of the pipeline the processed data are written as parquet files on the Databricks file system (dbfs). At the same time, throughout the process several checkpoints are kept to avoid exploding computations of complex queries.
 
 % In addition, the algorithm of choice for the establishment of long term trends provides an efficient solution to the problem, since on every iteration there is a significant data reduction while losing no information. \\
-%To finalize, Pathogen algorithm is utilized in order to establish casual inference between events from the two time series.
+%To finalise, Pathogen algorithm is utilised in order to establish casual inference between events from the two time series.
 
 \subsection{The TrendCalculus algorithm}
 In order to establish long term trends on time series we implemented the TrendCalculus algorithm and focused the analysis on data from the financial sector. This section gives an overview of the algorithm and the necessary processing that was implemented in several stages of the pipeline. 
@@ -173,7 +171,7 @@ The TrendCalculus algorithms implements the following steps iteratively:
 \begin{itemize}
     \item Stream the data across a fixed window size. 
     \item For each window identify the dated High and Low. 
-    \item Summarise each window as rising or falling (based on the order of occurrence of the Low/High; a window is characterized as rising if the Low is followed by the High and falling for the opposite case)
+    \item Summarise each window as rising or falling (based on the order of occurrence of the Low/High; a window is characterised as rising if the Low is followed by the High and falling for the opposite case).
     \item Compare the summary of the current window to the previous one. 
     \item Assign a sign for each window according to the TrendCalculus equation \ref{TrendCalculusEquation}. 
 \end{itemize}
@@ -199,7 +197,7 @@ By looking at the last step of the TrendCalculus algorithm one notices that the 
 \textbf{L}: Low\\
 \textbf{S}: Second of H/L\\[2ex]
 The above data structure is used to provide an additional summary on zero-windows by using the Second H/L of the previous window and the First H/L of the current window. This additional-intermediate window is then used as a regular window to find the trends after comparison with the previous and current window. Lastly, the reversals are then found as usual since all of the windows are now either rising or falling and the reversal finding rules can be applied. \\[2ex]
-The output of the above algorithm is a time series of reversal points or in other words a time series of trend change points. The returned time series can be used as input to the algorithm iteratively in order to find reversals of higher order and establish long term trends. What is worth mentioning is that by doing so, no information is lost since a reversal of order $n$ is also a reversal of order $n-1$. This stacking of TrendCalculus time series provides an efficient solution on finding high order reversals, since on each iteration performed, the data is reduced until no points are available or the required number of points are summarized (all reversals of a given order have been established). 
+The output of the above algorithm is a time series of reversal points or in other words a time series of trend change points. The returned time series can be used as input to the algorithm iteratively in order to find reversals of higher order and establish long term trends. What is worth mentioning is that by doing so, no information is lost since a reversal of order $n$ is also a reversal of order $n-1$. This stacking of TrendCalculus time series provides an efficient solution on finding high order reversals, since on each iteration performed, the data is reduced until no points are available or the required number of points are summarised (all reversals of a given order have been established). 
 
 
 \section{Results - Showcases}
@@ -229,7 +227,7 @@ For the second showcase the gold price is compared against the S$\&$P$500$ index
     \item Gold rises in times of economic distress and crises.
 \end{itemize}
 This intuition is further confirmed by historical data that usually show that gold performs better than stocks in times of market downturn. In order to give an example of this long term inverse movement we focus on the events after the stock market crash of February $2018$.\\[2ex]
-On Monday the $5^{th}$ of February $2018$, an event often characterized as “Volmageddon” (Volume Armageddon), the $S\&P500$ index saw one of the largest one-day point drop in history by $113.19$ points. Despite the fall of the rest of the stock market indexes that followed, gold improved. During the first few months after Volmageddon both commodities fluctuated without any major ups or downs. However, from May of the same year S$\&$P$500$ started to steadily grow, while gold plunged hitting a significant low on August. The graph of Figure \ref{fig:GoldSP500Scalled} illustrates the two time series over the year $2018$, where the previously described inverse movement can be clearly observed. 
+On Monday the $5^{th}$ of February $2018$, an event often characterised as “Volmageddon” (Volume Armageddon), the $S\&P500$ index saw one of the largest one-day point drop in history by $113.19$ points. Despite the fall of the rest of the stock market indexes that followed, gold improved. During the first few months after Volmageddon both commodities fluctuated without any major ups or downs. However, from May of the same year S$\&$P$500$ started to steadily grow, while gold plunged hitting a significant low on August. The graph of Figure \ref{fig:GoldSP500Scalled} illustrates the two time series over the year $2018$, where the previously described inverse movement can be clearly observed. 
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=1.05\textwidth]{Images/GoldSP500.png}
@@ -246,7 +244,7 @@ The algorithm is implemented on a library where the main two packages are the fo
 \begin{itemize}
     \item \textbf{Rooster}: The Rooster takes as input some time related events structured as a resilient distributed data set (rdd) of events and generates a graph (GraphX) with vertices that contain specific attributes and edges with the weights of the causal links. Then, it observes a true causation signal on the events by generating random correlations (some noise) over the same events but on different times (uses Monte Carlo simulations to check if it is a true causal link or just a simple coincidence) and back propagating the scores to their most connected events.
     After that, each event will be linked to many other with specific weights. 
-    Then, it outputs the causal effects found (the observed and normalized correlations) structured as a graph.
+    Then, it outputs the causal effects found (the observed and normalised correlations) structured as a graph.
   
     \item \textbf{Sun}: The Sun takes as input the output of the Rooster and extracts the most probable causes and effects by returning a new graph where vertices contain the score of two measures. The latter are related with the likelihood of the event to cause or to be caused by other events:
 
@@ -262,7 +260,7 @@ The algorithm is implemented on a library where the main two packages are the fo
 
 
 \subsubsection{Connection with TrendCalculus}
-Pathogen is utilized aiming to establish causal inference on bi-variate time series. The main goal behind using this algorithm is to create a causal network in which the time series are converted to events that are then turned into graphs. These graphs are then to be analysed and hopefully provide meaningful insight. \\[2ex]
+Pathogen is utilised aiming to establish causal inference on bi-variate time series. The main goal behind using this algorithm is to create a causal network in which the time series are converted to events that are then turned into graphs. These graphs are then to be analysed and hopefully provide meaningful insight. \\[2ex]
 Since the output of TrendCalculus is a time series of trend change points (reversal points) and the input of Pathogen is a set of events, it is necessary to transform the one into the other. 
 Therefore, an event in this case is designed to be the occurrence of consecutive reversal points for a specific reversal order. Each event carries information regarding the dated reversals of the time series and the intervals that rise from them. 
 For each of these intervals, the next information has been extracted and passed to the corresponding event:
@@ -282,7 +280,7 @@ For each of these intervals, the next information has been extracted and passed 
     \item Width: the width of the interval, i.e the duration of the event.  
     \item MaxRev: the specific reversal order considered in each case.
     \item Slope: slope value of the rising or falling trends. 
-    \item Normalized Slope: once the slope is obtained, it is normalized so it can take a number between 0 and 20 indicating the slope weight. 
+    \item Normalised Slope: once the slope is obtained, it is normalised so it can take a number between 0 and 20 indicating the slope weight. 
     \item Amplitude: a value between $0$ and $1$. It is computed by measuring the distances between one event from one time series and the events from the other time series. If the event does not overlap with any of the events in the other time series and the distance between the closest one is very large, its amplitude will be 0. But if the events overlap with any, its amplitude will be $1$. In any other case, the amplitude will be equal to $e^{-d}$.
 \end{itemize}
 After several processing steps, the extracted information from the TrendCalculus time series is shown on Figure \ref{fig:data}.
@@ -290,7 +288,7 @@ After several processing steps, the extracted information from the TrendCalculus
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{6.8}{0}\selectfont]
    
 +---------+--------------+------------+-------------------+-------------------+-----+------+------+------+---------------+---------+
-|conceptId|start_of_event|end_of_event|        start_value|          end_value|trend| width|maxRev| slope|normalizedSlope|amplitude|
+|conceptId|start_of_event|end_of_event|        start_value|          end_value|trend| width|maxRev| slope|normalisedSlope|amplitude|
 +---------+--------------+------------+-------------------+-------------------+-----+------+------+------+---------------+---------+
 |    61013|    1325586960|  1325590140|0.40563991323210513|0.15618221258134468|    0|  3180|     6|-0.685|             13|    0.272|
 |     6111|    1325590140|  1325647080|0.15618221258134468| 0.6203904555314533|    1| 56940|     6| 0.067|              1|      1.0|
@@ -322,7 +320,7 @@ After several processing steps, the extracted information from the TrendCalculus
 
 
 \subsection{Experiments}
-One major issue that occurred during the stacking of the two algorithms is that different reversal orders of the two time series came with significantly different interval widths of consecutive reversals. To handle this issue and choose the optimal pair of orders, we used the Kolmogorov-Smirnov statistic. Specifically, the optimal pair was chosen as the one with the smallest Kolmogorov-Smirnov statistic between the empirical distribution functions of the times between consecutive reversals. The results of these experiments are summarized by the value of the Kolmogorov-Smirnov statistic on tables \ref{table:gold_oil}, \ref{table:gold_s&p500}. Notably, the optimal values for the reversal orders for Gold and Oil turn out to by $7$ and $6$ respectively; a result that was expected after visual inspection of the graph of Figure \ref{fig:GoldOilScalled}. For the Gold price and the S$\&$P$500$ index, the respective pair of orders turns out to be again $7$ and $6$. 
+One major issue that occurred during the stacking of the two algorithms is that different reversal orders of the two time series came with significantly different interval widths of consecutive reversals. To handle this issue and choose the optimal pair of orders, we used the Kolmogorov-Smirnov statistic. Specifically, the optimal pair was chosen as the one with the smallest Kolmogorov-Smirnov statistic between the empirical distribution functions of the time widths between consecutive reversals. The results of these experiments are summarised by the value of the Kolmogorov-Smirnov statistic on tables \ref{table:gold_oil}, \ref{table:gold_s&p500}. Notably, the optimal values for the reversal orders for Gold and Oil turn out to be $7$ and $6$ respectively; a result that was expected after visual inspection of the graph of Figure \ref{fig:GoldOilScalled}. For the Gold price and the S$\&$P$500$ index, the respective pair of orders turns out to be again $7$ and $6$. 
 
 \vspace{0.3in}
 \begin{table}[h!]
@@ -391,29 +389,29 @@ One major issue that occurred during the stacking of the two algorithms is that 
 \label{table:gold_s&p500}
 \end{table}
 \section{Results and Interpretation}
-The full sets of events over the last two decades from the two time series (with the structure shown in Figure \ref{fig:data_pathogen}) are merged together into a single set of events and it is passed as input to Pathogen. After calling the Rooster and the Sun methods, the information of interest lays on the edges and vertices of the returned graph. For interpretation purposes the vertices are joined together while including the normalized correlation among them and their corresponding causal measures (Figure \ref{fig:graph}).
+The full sets of events over the last two decades from the two time series (with the structure shown in Figure \ref{fig:data_pathogen}) are merged together into a single set of events and it is passed as input to Pathogen. After calling the Rooster and the Sun methods, the information of interest lays on the edges and vertices of the returned graph. For interpretation purposes the vertices are joined together while including the normalised correlation among them and their corresponding causal measures (Figure \ref{fig:graph}).
 \begin{figure}[!ht]
 \centering
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
-+-----+-----+------------------+--------------------+--------------------+
-|  src|  dst|          normCorr|      aggressiveness|         sensitivity|
-+-----+-----+------------------+--------------------+--------------------+
-| 7212| 6117|               1.0|0.012391763797138798| 0.00465969871699266|
-| 7210|61014|0.9259259259259258| 0.14875136530932828|0.019126830444798487|
-| 7210|61113|0.8064516129032259| 0.14875136530932828|0.016698026578792328|
-| 7200|61120|0.7042253521126761| 0.11715155100118536|0.010176879325396902|
-| 6110|72010|0.6329113924050632| 0.11294708400178055|0.021303660499436838|
-| 7200|61017|               0.6| 0.11715155100118536|0.017430209595300727|
-| 7210|61111|0.5681818181818182| 0.14875136530932828|0.008634927912457978|
-| 6111|61017|               0.5|0.018092888492412154|0.017430209595300727|
-|61017| 6111|               0.5|0.017315048859863093|0.018213222564919862|
-| 7204|61012|               0.5|0.026675634436195368|0.016129393647798848|
-+-----+-----+------------------+--------------------+--------------------+
++-----+-----+--------+--------------+-----------+
+|  src|  dst|normCorr|aggressiveness|sensitivity|
++-----+-----+--------+--------------+-----------+
+| 7212| 6117|     1.0|       0.01239|    0.00466|
+| 7210|61014| 0.92592|       0.14875|    0.01913|
+| 7210|61113| 0.80645|       0.14875|    0.01669|
+| 7200|61120| 0.70422|       0.11715|    0.01017|
+| 6110|72010| 0.63291|       0.11295|    0.02130|
+| 7200|61017|     0.6|       0.11715|    0.01743|
+| 7210|61111| 0.56818|       0.14875|    0.00863|
+| 6111|61017|     0.5|       0.01809|    0.01743|
+|61017| 6111|     0.5|       0.01731|    0.01821|
+| 7204|61012|     0.5|       0.02667|    0.01613|
++-----+-----+--------+--------------+-----------+
     \end{BVerbatim}
-    \caption{Example - Output of Pathogen: The \textit{src} and \textit{dst} indicate the event id's of the related vertices, the \textit{normCorr} stands for the normalized correlation and the last two arguments are the returned causality measures.}
+    \caption{Example - Output of Pathogen: The \textit{src} and \textit{dst} indicate the event id's of the related vertices, the \textit{normCorr} stands for the normalised correlation and the last two arguments are the returned causality measures.}
     \label{fig:graph}
 \end{figure}
-\\The first row of the table in Figure \ref{fig:graph},  can be interpreted as follows: the event $7212$, i.e., encoding reversal order $7$ of gold price $(2)$ rising $(1)$ by normalized slope $2$ between $(2/20$ and $3/20)$ and event $6117$, i.e., encoding reversal order $6$ of oil price $(1)$ rising $(1)$ by normalized slope $7$ between $(7/20$ and $8/20)$, have the highest normalized correlation of $1.0$ but with limited aggressiveness $0.012391763797138798$ and sensitivity $0.00465969871699266$. Meaning that, \textit{a slight rise in the gold price of reversal order $7$ precedes a medium rise in oil price of reversal order $6$.}\\[3ex]
+\\The first row of the table in Figure \ref{fig:graph},  can be interpreted as follows: the event $7212$, i.e., encoding reversal order $7$ of gold price $(2)$ rising $(1)$ by normalised slope $2$ between $(2/20$ and $3/20)$ and event $6117$, i.e., encoding reversal order $6$ of oil price $(1)$ rising $(1)$ by normalised slope $7$ between $(7/20$ and $8/20)$, have the highest normalised correlation of $1.0$ but with limited aggressiveness $0.01239$ and sensitivity $0.00466$. Meaning that, \textit{a slight rise in the gold price of reversal order $7$ precedes a medium rise in oil price of reversal order $6$.}\\[3ex]
 % \begin{figure}[ht!]
 % \centering
 %     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
@@ -431,12 +429,12 @@ the event $7210$, i.e., a small rise in gold price at order $7$, seems to preced
 \begin{figure}[!h]
 \centering
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
-+-----+-----+------------------+--------------------+--------------------+
-|  src|  dst|          normCorr|      aggressiveness|         sensitivity|
-+-----+-----+------------------+--------------------+--------------------+
-| 7210|61014|0.9259259259259258| 0.14875136530932828|0.019126830444798487|
-| 7210|61113|0.8064516129032259| 0.14875136530932828|0.016698026578792328|
-+-----+-----+------------------+--------------------+--------------------+
++-----+-----+--------+--------------+-----------+
+|  src|  dst|normCorr|aggressiveness|sensitivity|
++-----+-----+--------+--------------+-----------+
+| 7210|61014| 0.92592|       0.14875|    0.01913|
+| 7210|61113| 0.80645|       0.14875|    0.01669|
++-----+-----+--------+--------------+-----------+
     \end{BVerbatim}
     \caption{Rows 2 and 3 - Output of Pathogen}
     \label{fig:graph2}
@@ -445,26 +443,26 @@ the event $7210$, i.e., a small rise in gold price at order $7$, seems to preced
 \begin{figure}[!ht]
 \centering
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
-+-----+-----+------------------+--------------------+--------------------+
-|  src|  dst|          normCorr|      aggressiveness|         sensitivity|
-+-----+-----+------------------+--------------------+--------------------+
-| 7200|61120|0.7042253521126761| 0.11715155100118536|0.010176879325396902|
-| 7200|61017|               0.6| 0.11715155100118536|0.017430209595300727|
-+-----+-----+------------------+--------------------+--------------------+
++-----+-----+--------+--------------+-----------+
+|  src|  dst|normCorr|aggressiveness|sensitivity|
++-----+-----+--------+--------------+-----------+
+| 7200|61120| 0.70422|       0.11715|    0.01017|
+| 7200|61017|     0.6|       0.11715|    0.01743|
++-----+-----+--------+--------------+-----------+
     \end{BVerbatim}
     \caption{Rows 4 and 6 - Output of Pathogen}
     \label{fig:graph3}
 \end{figure}
-Looking at these two pairs of events and their associated causal measures, they seem to suggest that when the order $7$ gold price begins to fall with the smallest normalized slope in (0,1/20), corresponding to event $7200$, the order $6$ in oil price begins to rise sharply by the greatest normalized slopes in (17/20, 20/20). \textit{This seems to indicate that a drop in gold price seems to precede a sharp rise in oil price.}\\[2ex]
-Yet another interesting pair of events seen in Figure \ref{fig:graph4}, suggests that a small rise in order $6$ oil price (event $6110$) precedes an order $7$ gold price decrease with a moderately large normalized (negative) slope in ($10/20$,$11/20$).
+Looking at these two pairs of events and their associated causal measures, they seem to suggest that when the order $7$ gold price begins to fall with the smallest normalised slope in (0,1/20), corresponding to event $7200$, the order $6$ in oil price begins to rise and fall sharply by the greatest normalised slopes in (17/20, 20/20). \textit{This seems to indicate that a drop in gold price seems to precede a sharp rise and fall in oil price.}\\[2ex]
+Yet another interesting pair of events seen in Figure \ref{fig:graph4}, suggests that a small rise in order $6$ oil price (event $6110$) precedes an order $7$ gold price decrease with a moderately large normalised (negative) slope in ($10/20$,$11/20$).
 \begin{figure}[!ht]
 \centering
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
-+-----+-----+------------------+--------------------+--------------------+
-|  src|  dst|          normCorr|      aggressiveness|         sensitivity|
-+-----+-----+------------------+--------------------+--------------------+
-| 6110|72010|0.6329113924050632| 0.11294708400178055|0.021303660499436838|
-+-----+-----+------------------+--------------------+--------------------+
++-----+-----+--------+--------------+-----------+
+|  src|  dst|normCorr|aggressiveness|sensitivity|
++-----+-----+--------+--------------+-----------+
+| 6110|72010| 0.63291|       0.11295|    0.02130|
++-----+-----+--------+--------------+-----------+
     \end{BVerbatim}
     \caption{Row 5 - Output of Pathogen}
     \label{fig:graph4}
@@ -474,31 +472,51 @@ All of the above interpretations should be made with a grain of salt and only se
 \begin{figure}[!ht]
 \centering
     \begin{BVerbatim}[baselinestretch=0.1,fontsize=\fontsize{12}{0}\selectfont]
-+----+-----+-------------------+-------------------+--------------------+
-| src|  dst|           normCorr|     aggressiveness|         sensitivity|
-+----+-----+-------------------+-------------------+--------------------+
-|7210| 6116|0.10608203677510608|0.14875136530932828|0.004847965198487746|
-|7210| 7209|0.13089005235602094|0.14875136530932828|0.008142236735386854|
-|7210| 7213|0.12626262626262624|0.14875136530932828|0.009959505018202556|
-|7210| 6108|0.16198704103671707|0.14875136530932828|0.009751230380228208|
-|7210| 6111| 0.1405078055272433|0.14875136530932828|0.018213222564919862|
-+----+-----+-------------------+-------------------+--------------------+
++----+-----+--------+--------------+-----------+
+| src|  dst|normCorr|aggressiveness|sensitivity|
++----+-----+--------+--------------+-----------+
+|7210| 6116| 0.10608|       0.14875|    0.00485|
+|7210| 7209| 0.13089|       0.14875|    0.00814|
+|7210| 7213| 0.12626|       0.14875|    0.00996|
+|7210| 6108| 0.16199|       0.14875|    0.00975|
+|7210| 6111| 0.14051|       0.14875|    0.01821|
++----+-----+--------+--------------+-----------+
     \end{BVerbatim}
     \caption{Example - Output of Pathogen ordered by descending aggressiveness value}
     \label{fig:graph5}
 \end{figure}
 
 \section{Discussion and Conclusion}
-The TrendCalculus algorithm provides a powerful solution on identifying major trend change points and is complemented with an interactive visualization tool that allows the user to focus on any time window of interest. The latter, is quite sufficient on illustrating more than one reversal time series which can be beneficial for comparison purposes. This way, the user can gain some intuition from visual inspection on bi-variate time series. Then, the outcome can be used as input to Pathogen in an attempt to find causal inference on time related events. Notably, the implementation is not limited to financial time series, but rather can receive as input any time series. In addition, Pathogen seems to capture part of our intuition regarding the co-movement of Gold and Oil prices but also suggests that other factors should be put under question. We believe that the combination of the two algorithms that have the distinguishing feature of being able to scale to arbitrarily large data sets can be very beneficial for discovering causal inference among multivariate time series.
+The TrendCalculus algorithm provides a powerful solution on identifying major trend change points and is complemented with an interactive visualisation tool that allows the user to focus on any time window of interest. The latter, is quite sufficient on illustrating more than one reversal time series which can be beneficial for comparison purposes. This way, the user can gain some intuition from visual inspection on bi-variate time series. Then, the outcome can be used as input to Pathogen in an attempt to find causal inference on time related events. Notably, the implementation is not limited to financial time series, but rather can receive as input any time series. In addition, Pathogen seems to capture part of our intuition regarding the co-movement of Gold and Oil prices but also suggests that other factors should be put under question. We believe that the combination of the two algorithms that have the distinguishing feature of being able to scale to arbitrarily large data sets can be very beneficial for discovering causal inference among multivariate time series.
 
-\section{Further work}
-In order to perform a more thorough interpretation of the results, the graph resulted from Pathogen can be transformed into Fuzzy cognitive maps: causal relations. \\
+% Final deep dive on the getEventsCorrelation method :
+% The correlations found are indeed the sum of amplitudes. However, not the amplitudes of the original events!
+% The getTicks method creates additional events based on the last time (nextTime in Pathogen) found before the endTime. The way this is done is by iterating like this:
+% nextTime = startTime
+% while nextTime.isBefore(endTime)
+% nextTime = nextTime.plusMinute(1)
+% Then the events are returned with an additional column of nextTime. After that the different events are joined on an Array with elements(event i, event j). The joined condition is the nextTime. Lastly, the elements are joined  by key. On every pair of joined events the correlation is found by summing the amplitudes. Eg: events 2 and 5 have correlation 6.0 . If we look at the events returned by the getTicks method we see the following
+
+% NextTime value for the events with conceptId 5 and 2:
+% 5: 1609740000 1609800000 1609860000
+% 2: 1609740000 1609800000 1609860000
+
+% Then the pair (2-5) appears three times inside the events correlation. So I assume that the join condition is the NextTime.
+
+% One thing is that I transformed the times from unix to timestamp to see if the result makes sense. Unfortunately it doesnt. My speculation is that this is because we are using 3 different types: seconds, minutes and milliseconds. This is problematic because the condition: nextTime.isBefore(endTime) sometimes is met but looking at the timestamps it is wrong.
+
+% I am not sure how looking at the last minute before the end of the event and joining events together if they end at the same time can be meaningfully interpreted. However, I hope this makes things a bit more clear when it comes to understanding the correlation
 
 
-\section{Acknowledgments}
-This project was supported by Combient Mix AB through Data Science Project Fellowships between 2021-10 and 2021-12 to Stavroula Rafailia Vlachou and Virginia Jimenez Mohedano at Combient Competence Centre for Data Engineering Sciences, Department of Mathematics, Uppsala University, Uppsala, Sweden, and Databricks University Alliance with infrastructure credits from AWS.\\
-Many thanks to Andrew Morgan and Antoine Amend for their guidance.\\[3ex]
-Our project work is available as examples and notebooks at \cite{TrendCalculusNotebooks} and \cite{PathogenNotebooks}. 
+
+\section{Future and Current Work}
+In order to perform a more thorough interpretation of the results, the graph resulted from Pathogen can be transformed into Fuzzy cognitive maps: causal relations. 
+Our current project work is available as examples and notebooks at \cite{TrendCalculusNotebooks} and \cite{PathogenNotebooks}. 
+
+
+\section{Acknowledgements}
+
+This project was supported by {\em Combient Mix AB} through a {\em Data Science Project Fellowships} between 2021-10 and 2021-12 to Stavroula Rafailia Vlachou and Virginia Jimenez Mohedano at {\em Combient Competence Centre for Data Engineering Sciences}, Department of Mathematics, Uppsala University, Uppsala, Sweden, and {\em Databricks University Alliance} with infrastructure credits from {\em AWS} to Raazesh Sainudiin, Department of Mathematics, Uppsala University, Sweden. Many thanks to Andrew Morgan and Antoine Amend for their guidance.
 
 \nocite{*}
 \printbibliography
